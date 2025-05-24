@@ -4,243 +4,202 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Google Classroom</title>
-  <link rel="icon" type="image/png" href="google-classroom-favicon.png" />
+  <link rel="icon" href="google-classroom-favicon.png" />
   <style>
     body {
       margin: 0;
-      font-family: Arial, sans-serif;
+      font-family: sans-serif;
       background: black;
-      overflow: hidden;
       color: white;
-    }
-    .falling-money {
-      position: absolute;
-      top: -50px;
-      color: limegreen;
-      font-size: 24px;
-      animation: fall linear infinite;
-    }
-    @keyframes fall {
-      0% { transform: translateY(-50px); }
-      100% { transform: translateY(100vh); }
-    }
-    .container {
-      position: relative;
-      z-index: 1;
       text-align: center;
-      padding-top: 40px;
+      overflow-x: hidden;
     }
-    .money-display, .income-display {
-      font-size: 20px;
-      margin-bottom: 10px;
+    h1 {
+      margin-top: 20px;
     }
-    button {
-      display: block;
-      margin: 10px auto;
-      padding: 10px 20px;
-      font-size: 16px;
-      background: white;
+    #moneyBtn {
+      font-size: 3rem;
+      padding: 30px 60px;
+      background: green;
+      color: white;
       border: none;
-      border-radius: 8px;
+      border-radius: 10px;
+      margin-bottom: 20px;
       cursor: pointer;
     }
-    #earn-btn {
-      font-size: 28px;
-      background-color: limegreen;
-      width: 200px;
-      height: 80px;
-      border-radius: 8px;
-    }
-    #notification {
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #444;
-      color: white;
+    .btn {
+      font-size: 1rem;
       padding: 10px 20px;
+      margin: 5px;
       border-radius: 8px;
-      display: none;
-    }
-    #shop-modal {
-      display: none;
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
+      border: none;
+      cursor: pointer;
       background: white;
       color: black;
-      padding: 20px;
+      transition: transform 0.2s;
+    }
+    .btn.spin {
+      animation: spin 0.4s linear;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    #shop, #gadgets {
+      margin: 10px;
+      padding: 10px;
+      background: white;
+      color: black;
       border-radius: 10px;
-      z-index: 999;
-      max-height: 80vh;
-      overflow-y: auto;
+      display: none;
     }
-    #shop-modal button.close {
-      position: absolute;
-      top: 5px;
-      right: 5px;
-      background: black;
-      color: white;
-      border-radius: 5px;
-      padding: 5px 10px;
-    }
-    .shop-item {
+    .shop-button {
       margin: 5px;
-      padding: 5px;
-      background: #eee;
+      background: #f0f0f0;
+      padding: 8px;
       border-radius: 6px;
+    }
+    #moneyRain {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: -1;
+    }
+    .money-fall {
+      position: absolute;
+      font-size: 20px;
+      color: green;
+      animation: fall 3s linear infinite;
+    }
+    @keyframes fall {
+      from { top: -20px; }
+      to { top: 100%; }
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="money-display" id="money">Money: $0.00</div>
-    <div class="income-display" id="income">Income per click: $0.01</div>
-    <button id="earn-btn">$</button>
-    <button onclick="openShop()">🛒 Shop</button>
-    <button onclick="saveGame()">💾 Save Game</button>
-    <button onclick="resetGame()">🔄 Reset Game</button>
+  <h1>Google Classroom</h1>
+  <h2 id="moneyDisplay">Money: $0.00</h2>
+  <button id="moneyBtn">$</button>
+  <div>
+    <button class="btn" onclick="toggleShop()">Shop</button>
+    <button class="btn" onclick="toggleGadgets()">Gadgets</button>
+    <button class="btn" onclick="resetGame()">Reset</button>
   </div>
-  <div id="notification"></div>
-  <div id="shop-modal">
-    <button class="close" onclick="closeShop()">X</button>
-    <div id="shop-items"></div>
+  <div id="shop">
+    <button class="btn" onclick="toggleShop()">X</button>
+    <div id="shopItems"></div>
   </div>
+  <div id="gadgets">
+    <button class="btn" onclick="toggleGadgets()">X</button>
+    <div id="gadgetItems"></div>
+  </div>
+  <div id="moneyRain"></div>
 
   <script>
-    let money = parseFloat(localStorage.getItem('money') || 0);
-    let income = parseFloat(localStorage.getItem('income') || 0.01);
-    let purchased = JSON.parse(localStorage.getItem('purchased') || '[]');
+    const moneyBtn = document.getElementById('moneyBtn');
+    const moneyDisplay = document.getElementById('moneyDisplay');
+    const shopItems = document.getElementById('shopItems');
+    const gadgetItems = document.getElementById('gadgetItems');
+    let money = parseFloat(localStorage.getItem("money") || 0);
+    let incomePerClick = parseFloat(localStorage.getItem("income") || 0.01);
 
-   const items = [
-  { name: "Water Bottle", cost: 2, income: 0.02, next: "Sandwich" },
-  { name: "Sandwich", cost: 5, income: 0.05, next: "Book" },
-  { name: "Book", cost: 15, income: 0.1, next: "Backpack" },
-  { name: "Backpack", cost: 40, income: 0.2, next: "Smartphone" },
-  { name: "Smartphone", cost: 300, income: 1.2, next: "Gaming Console" },
-  { name: "Gaming Console", cost: 500, income: 2.1, next: "Electric Scooter" },
-  { name: "Electric Scooter", cost: 800, income: 3.0, next: "Laptop" },
-  { name: "Laptop", cost: 1200, income: 4.2, next: "4K TV" },
-  { name: "4K TV", cost: 2000, income: 6.5, next: "Motorcycle" },
-  { name: "Motorcycle", cost: 4500, income: 9.0, next: "Car" },
-  { name: "Car", cost: 15000, income: 25.0, next: "Used Tesla" },
-  { name: "Used Tesla", cost: 30000, income: 45.0, next: "Pizza Franchise" },
-  { name: "Pizza Franchise", cost: 60000, income: 95.0, next: "Gas Station" },
-  { name: "Gas Station", cost: 120000, income: 190.0, next: "Small Office" },
-  { name: "Small Office", cost: 250000, income: 400.0, next: "Apartment Complex" },
-  { name: "Apartment Complex", cost: 1000000, income: 1500.0, next: "Shopping Mall" },
-  { name: "Shopping Mall", cost: 4000000, income: 5500.0, next: "Skyscraper" },
-  { name: "Skyscraper", cost: 10000000, income: 15000.0, next: "SpaceX Shares" },
-  { name: "SpaceX Shares", cost: 25000000, income: 40000.0, next: "Google Shares" },
-  { name: "Google Shares", cost: 60000000, income: 100000.0, next: "Island Resort" },
-  { name: "Island Resort", cost: 150000000, income: 250000.0, next: "Mega Yacht" },
-  { name: "Mega Yacht", cost: 300000000, income: 500000.0, next: "Private Jet" },
-  { name: "Private Jet", cost: 600000000, income: 900000.0, next: "Luxury Airline" },
-  { name: "Luxury Airline", cost: 1200000000, income: 1600000.0, next: "Tech Company" },
-  { name: "Tech Company", cost: 2500000000, income: 3000000.0, next: "Bank" },
-  { name: "Bank", cost: 5000000000, income: 6000000.0, next: "Media Conglomerate" },
-  { name: "Media Conglomerate", cost: 10000000000, income: 12000000.0, next: "Private Island" },
-  { name: "Private Island", cost: 20000000000, income: 25000000.0, next: "Art Collection" },
-  { name: "Art Collection", cost: 30000000000, income: 40000000.0, next: "Luxury Casino" },
-  { name: "Luxury Casino", cost: 50000000000, income: 70000000.0, next: "Formula 1 Team" },
-  { name: "Formula 1 Team", cost: 100000000000, income: 150000000.0, next: null }
-];
-
-
-    const moneyDisplay = document.getElementById('money');
-    const incomeDisplay = document.getElementById('income');
-    const earnBtn = document.getElementById('earn-btn');
-    const notification = document.getElementById('notification');
-    const shopModal = document.getElementById('shop-modal');
-    const shopItems = document.getElementById('shop-items');
+    const items = [
+      { name: 'Water Bottle', cost: 2, income: 0.01 },
+      { name: 'Sandwich', cost: 5, income: 0.02 },
+      { name: 'Book', cost: 15, income: 0.03 },
+      { name: 'Backpack', cost: 40, income: 0.05 },
+      { name: 'Smartphone', cost: 300, income: 0.5 },
+      { name: 'Gaming Console', cost: 500, income: 1 },
+      { name: 'Laptop', cost: 1200, income: 2 },
+      { name: '4K TV', cost: 2000, income: 3 },
+      { name: 'Motorcycle', cost: 4500, income: 5 },
+      { name: 'Car', cost: 15000, income: 10 },
+      { name: 'Tesla', cost: 30000, income: 20 },
+      { name: 'Pizza Franchise', cost: 60000, income: 50 },
+      { name: 'Gas Station', cost: 120000, income: 100 },
+      { name: 'Skyscraper', cost: 10000000, income: 2000 },
+    ];
 
     function updateDisplay() {
       moneyDisplay.textContent = `Money: $${money.toFixed(2)}`;
-      incomeDisplay.textContent = `Income per click: $${income.toFixed(2)}`;
+      localStorage.setItem("money", money);
+      localStorage.setItem("income", incomePerClick);
     }
 
-    function earnMoney() {
-      money += income;
+    function addMoney() {
+      money += incomePerClick;
       updateDisplay();
+      dropDollar();
     }
 
-    let interval;
-    earnBtn.addEventListener('mousedown', () => {
-      earnMoney();
-      interval = setInterval(earnMoney, 100);
-    });
-    earnBtn.addEventListener('mouseup', () => clearInterval(interval));
-    earnBtn.addEventListener('mouseleave', () => clearInterval(interval));
-
-    function openShop() {
-      shopModal.style.display = 'block';
-      shopItems.innerHTML = '';
-      items.forEach(item => {
-        if (!purchased.includes(item.name)) {
-          const btn = document.createElement('button');
-          btn.textContent = `${item.name} - $${item.cost} (+$${item.increase}/click)`;
-          btn.className = 'shop-item';
-          btn.onclick = () => purchaseItem(item);
-          shopItems.appendChild(btn);
-        }
-      });
+    function toggleShop() {
+      const shop = document.getElementById("shop");
+      shop.style.display = shop.style.display === "block" ? "none" : "block";
     }
 
-    function closeShop() {
-      shopModal.style.display = 'none';
-    }
-
-    function purchaseItem(item) {
-      if (money >= item.cost) {
-        money -= item.cost;
-        income += item.increase;
-        purchased.push(item.name);
-        updateDisplay();
-        showNotification("Item purchased!");
-        openShop();
-      } else {
-        showNotification("You don't have enough money!");
-      }
-    }
-
-    function showNotification(msg) {
-      notification.textContent = msg;
-      notification.style.display = 'block';
-      setTimeout(() => {
-        notification.style.display = 'none';
-      }, 2000);
-    }
-
-    function saveGame() {
-      localStorage.setItem('money', money);
-      localStorage.setItem('income', income);
-      localStorage.setItem('purchased', JSON.stringify(purchased));
-      showNotification("Game saved!");
+    function toggleGadgets() {
+      const gadgets = document.getElementById("gadgets");
+      gadgets.style.display = gadgets.style.display === "block" ? "none" : "block";
     }
 
     function resetGame() {
-      if (confirm("Are you sure you want to reset your progress?")) {
-        money = 0;
-        income = 0.01;
-        purchased = [];
-        saveGame();
+      money = 0;
+      incomePerClick = 0.01;
+      updateDisplay();
+    }
+
+    function buyItem(item) {
+      if (money >= item.cost) {
+        money -= item.cost;
+        incomePerClick += item.income;
         updateDisplay();
+      } else {
+        alert("Not enough money!");
       }
     }
 
-    function spawnMoneyText() {
-      const div = document.createElement('div');
-      div.className = 'falling-money';
-      div.style.left = `${Math.random() * 100}vw`;
-      div.textContent = "$";
-      div.style.animationDuration = `${2 + Math.random() * 3}s`;
-      document.body.appendChild(div);
-      setTimeout(() => div.remove(), 5000);
+    function buildShop() {
+      shopItems.innerHTML = "";
+      items.forEach((item) => {
+        const btn = document.createElement("button");
+        btn.className = "btn shop-button";
+        btn.textContent = `${item.name} - $${item.cost} (+$${item.income.toFixed(2)}/click)`;
+        btn.onclick = () => buyItem(item);
+        shopItems.appendChild(btn);
+      });
     }
-    setInterval(spawnMoneyText, 150);
 
+    function dropDollar() {
+      const dollar = document.createElement("div");
+      dollar.className = "money-fall";
+      dollar.style.left = Math.random() * 100 + "%";
+      dollar.textContent = "$";
+      document.getElementById("moneyRain").appendChild(dollar);
+      setTimeout(() => dollar.remove(), 3000);
+    }
+
+    let holdInterval;
+    moneyBtn.addEventListener("mousedown", () => {
+      addMoney();
+      holdInterval = setInterval(addMoney, 100);
+      moneyBtn.classList.add("spin");
+    });
+    moneyBtn.addEventListener("mouseup", () => {
+      clearInterval(holdInterval);
+      moneyBtn.classList.remove("spin");
+    });
+    moneyBtn.addEventListener("mouseleave", () => {
+      clearInterval(holdInterval);
+      moneyBtn.classList.remove("spin");
+    });
+
+    // Init
     updateDisplay();
+    buildShop();
   </script>
 </body>
 </html>
