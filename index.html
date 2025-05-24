@@ -4,207 +4,226 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Google Classroom</title>
-  <link rel="icon" href="favicon.png" type="image/png">
+  <link rel="icon" href="google-classroom-favicon.png" />
   <style>
-    * {
-      box-sizing: border-box;
-      font-family: Arial, sans-serif;
-    }
     body {
       margin: 0;
-      padding: 0;
-      background: #111;
+      font-family: Arial, sans-serif;
+      background-color: #1e1e1e;
       color: white;
       overflow: hidden;
     }
-    .background {
+
+    #falling-container {
       position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      z-index: -1;
-      overflow: hidden;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 0;
     }
-    .money {
+
+    .falling-money {
       position: absolute;
-      color: green;
-      font-size: 20px;
+      top: -2rem;
+      font-size: 1.2rem;
+      color: #00ff00;
       animation: fall 5s linear infinite;
-      opacity: 0.7;
     }
+
     @keyframes fall {
-      from {
-        top: -10%;
-      }
-      to {
-        top: 110%;
-      }
+      0% { top: -2rem; }
+      100% { top: 110%; }
     }
+
     .container {
+      position: relative;
+      z-index: 1;
       text-align: center;
-      padding-top: 60px;
+      margin-top: 2rem;
     }
-    .money-display {
-      font-size: 20px;
-      margin: 10px;
+
+    h1 {
+      font-size: 2rem;
     }
-    .earn-btn {
-      font-size: 32px;
-      background: green;
-      color: white;
-      padding: 20px 40px;
-      border: none;
-      margin-bottom: 20px;
-      cursor: pointer;
-      border-radius: 0;
-    }
+
     .btn {
-      background: white;
-      color: black;
-      border: none;
-      padding: 10px 20px;
-      margin: 5px;
-      cursor: pointer;
-      border-radius: 0;
       display: block;
-      margin-left: auto;
-      margin-right: auto;
+      margin: 0.5rem auto;
+      padding: 1rem 2rem;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.3s;
     }
-    #notification {
-      color: #ccc;
-      margin-top: 20px;
-      font-size: 14px;
+
+    .btn-main {
+      background-color: green;
+      color: white;
+      font-size: 2rem;
+      width: 150px;
     }
+
+    .btn-secondary {
+      background-color: white;
+      color: black;
+    }
+
     #shop {
-      background: #222;
-      padding: 20px;
       position: fixed;
-      top: 10%;
+      top: 20%;
+      left: 50%;
+      transform: translate(-50%, 0);
+      background: #333;
+      padding: 2rem;
+      border-radius: 10px;
+      display: none;
+      z-index: 2;
+      max-height: 60vh;
+      overflow-y: auto;
+    }
+
+    .close-btn {
+      background-color: black;
+      color: white;
+      border-radius: 4px;
+      padding: 0.25rem 0.5rem;
+      position: absolute;
+      top: 0.5rem;
+      right: 0.5rem;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .notification {
+      position: fixed;
+      bottom: 1rem;
       left: 50%;
       transform: translateX(-50%);
-      border: 2px solid white;
+      background: gray;
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 5px;
       display: none;
-    }
-    .close-shop {
-      position: absolute;
-      top: 5px;
-      right: 10px;
-      font-size: 18px;
-      color: black;
-      background: white;
-      border: none;
-      padding: 2px 6px;
-      cursor: pointer;
-      border-radius: 0;
+      z-index: 3;
     }
   </style>
 </head>
 <body>
-  <div class="background" id="background"></div>
-
+  <div id="falling-container"></div>
   <div class="container">
     <h1>Google Classroom</h1>
-    <div class="money-display" id="money">Money: $0.00</div>
-    <div class="money-display" id="income">Income per click: $0.05</div>
-    <button class="earn-btn" onclick="earnMoney()">$</button>
-    <button class="btn" onclick="openShop()">Shop</button>
-    <button class="btn" onclick="saveGame()">Save Game</button>
-    <button class="btn" onclick="resetGame()">Reset Game</button>
-    <div id="notification"></div>
+    <h2 id="money">Money: $0.00</h2>
+    <h3 id="income">Income per click: $0.05</h3>
+
+    <button class="btn btn-main" id="earn">$</button>
+
+    <button class="btn btn-secondary" onclick="toggleShop()">Shop</button>
+    <button class="btn btn-secondary" onclick="saveGame()">Save Game</button>
+    <button class="btn btn-secondary" onclick="resetGame()">Reset Game</button>
   </div>
 
+  <div class="notification" id="notification"></div>
+
   <div id="shop">
-    <button class="close-shop" onclick="closeShop()">X</button>
+    <div class="close-btn" onclick="toggleShop()">X</div>
     <div id="shop-items"></div>
   </div>
 
   <script>
-    const items = {
-      "Water Bottle": { cost: 10, increase: 0.06, next: "Backpack" },
-      "Backpack": { cost: 50, increase: 0.12, next: "Cart" },
-      "Cart": { cost: 100, increase: 0.16, next: "Bicycle" },
-      "Bicycle": { cost: 200, increase: 0.21, next: "Smartphone" },
-      "Smartphone": { cost: 750, increase: 0.35, next: "Gaming Laptop" },
-      "Gaming Laptop": { cost: 2000, increase: 0.52, next: "Plasma TV" },
-      "Plasma TV": { cost: 5000, increase: 0.75, next: "Motorcycle" },
-      "Motorcycle": { cost: 15000, increase: 1.17, next: "Car" },
-      "Car": { cost: 35000, increase: 1.64, next: "Bitcoin" }
-    };
+    const earnBtn = document.getElementById("earn");
+    const moneyDisplay = document.getElementById("money");
+    const incomeDisplay = document.getElementById("income");
+    const notification = document.getElementById("notification");
+    let shopItemsDiv = document.getElementById("shop-items");
 
-    let data = JSON.parse(localStorage.getItem("moneyGame")) || {
+    let gameData = JSON.parse(localStorage.getItem("moneyGame")) || {
       money: 0,
       income: 0.05,
-      purchased: [],
-      available: ["Water Bottle"]
+      items: ["Water Bottle"],
     };
 
+    const allItems = Array.from({length: 100}, (_, i) => {
+      return {
+        name: `Item ${i + 1}`,
+        cost: 10 + i * 20,
+        increase: 0.05 + i * 0.01
+      };
+    });
+
     function updateDisplay() {
-      document.getElementById("money").textContent = `Money: $${data.money.toFixed(2)}`;
-      document.getElementById("income").textContent = `Income per click: $${data.income.toFixed(2)}`;
+      moneyDisplay.textContent = `Money: $${gameData.money.toFixed(2)}`;
+      incomeDisplay.textContent = `Income per click: $${gameData.income.toFixed(2)}`;
+    }
+
+    function showNotification(message) {
+      notification.textContent = message;
+      notification.style.display = "block";
+      setTimeout(() => notification.style.display = "none", 2000);
     }
 
     function earnMoney() {
-      data.money += data.income;
+      gameData.money += gameData.income;
       updateDisplay();
-      saveGame();
     }
 
-    function openShop() {
-      const shop = document.getElementById("shop-items");
-      shop.innerHTML = "";
-      data.available.forEach(item => {
+    let interval;
+    earnBtn.addEventListener("mousedown", () => {
+      earnMoney();
+      interval = setInterval(earnMoney, 100);
+    });
+    document.addEventListener("mouseup", () => clearInterval(interval));
+
+    function toggleShop() {
+      const shop = document.getElementById("shop");
+      shop.style.display = shop.style.display === "block" ? "none" : "block";
+      if (shop.style.display === "block") buildShop();
+    }
+
+    function buildShop() {
+      shopItemsDiv.innerHTML = "";
+      allItems.forEach(item => {
         const btn = document.createElement("button");
-        btn.className = "btn";
-        btn.textContent = `${item} - $${items[item].cost} (+$${items[item].increase}/click)`;
-        btn.onclick = () => purchaseItem(item);
-        shop.appendChild(btn);
+        btn.className = "btn btn-secondary";
+        btn.textContent = `${item.name} - $${item.cost} (+$${item.increase}/click)`;
+        btn.onclick = () => buyItem(item);
+        shopItemsDiv.appendChild(btn);
       });
-      document.getElementById("shop").style.display = "block";
     }
 
-    function closeShop() {
-      document.getElementById("shop").style.display = "none";
-    }
-
-    function purchaseItem(item) {
-      if (data.money >= items[item].cost) {
-        data.money -= items[item].cost;
-        data.income += items[item].increase;
-        data.purchased.push(item);
-        data.available = data.available.filter(i => i !== item);
-        if (items[item].next) data.available.push(items[item].next);
+    function buyItem(item) {
+      if (gameData.money >= item.cost) {
+        gameData.money -= item.cost;
+        gameData.income += item.increase;
         updateDisplay();
         saveGame();
-        openShop();
+      } else {
+        showNotification("You don’t have enough money");
       }
     }
 
     function saveGame() {
-      localStorage.setItem("moneyGame", JSON.stringify(data));
-      document.getElementById("notification").textContent = "Game saved successfully!";
+      localStorage.setItem("moneyGame", JSON.stringify(gameData));
     }
 
     function resetGame() {
-      if (confirm("Are you sure you want to reset your progress?")) {
-        data = { money: 0, income: 0.05, purchased: [], available: ["Water Bottle"] };
-        updateDisplay();
+      if (confirm("Are you sure you want to reset the game?")) {
+        gameData = { money: 0, income: 0.05, items: ["Water Bottle"] };
         saveGame();
-        document.getElementById("shop").style.display = "none";
+        updateDisplay();
       }
     }
 
-    function spawnMoneyText() {
-      const el = document.createElement("div");
-      el.className = "money";
-      el.textContent = "$";
-      el.style.left = Math.random() * 100 + "%";
-      el.style.animationDuration = (2 + Math.random() * 3) + "s";
-      document.getElementById("background").appendChild(el);
-      setTimeout(() => el.remove(), 5000);
+    function spawnFallingMoney() {
+      const elem = document.createElement("div");
+      elem.className = "falling-money";
+      elem.style.left = Math.random() * 100 + "%";
+      elem.textContent = "$";
+      document.getElementById("falling-container").appendChild(elem);
+      setTimeout(() => elem.remove(), 5000);
     }
 
-    setInterval(spawnMoneyText, 100);
+    setInterval(spawnFallingMoney, 150);
 
     updateDisplay();
   </script>
