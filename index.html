@@ -113,19 +113,40 @@
     let income = parseFloat(localStorage.getItem('income') || 0.01);
     let purchased = JSON.parse(localStorage.getItem('purchased') || '[]');
 
-    const items = [
-      { name: "Lemonade Stand", cost: 20, increase: 0.05 },
-      { name: "Paper Route", cost: 50, increase: 0.1 },
-      { name: "Dog Walker", cost: 100, increase: 0.2 },
-      { name: "Fast Food Job", cost: 500, increase: 0.5 },
-      { name: "Freelancer", cost: 1500, increase: 1.5 },
-      { name: "Uber Driver", cost: 3000, increase: 3 },
-      { name: "Store Manager", cost: 10000, increase: 6 },
-      { name: "Software Developer", cost: 30000, increase: 12 },
-      { name: "Stock Trader", cost: 80000, increase: 25 },
-      { name: "Crypto Mogul", cost: 250000, increase: 50 },
-      // Add more as needed...
-    ];
+   const items = [
+  { name: "Water Bottle", cost: 2, income: 0.02, next: "Sandwich" },
+  { name: "Sandwich", cost: 5, income: 0.05, next: "Book" },
+  { name: "Book", cost: 15, income: 0.1, next: "Backpack" },
+  { name: "Backpack", cost: 40, income: 0.2, next: "Smartphone" },
+  { name: "Smartphone", cost: 300, income: 1.2, next: "Gaming Console" },
+  { name: "Gaming Console", cost: 500, income: 2.1, next: "Electric Scooter" },
+  { name: "Electric Scooter", cost: 800, income: 3.0, next: "Laptop" },
+  { name: "Laptop", cost: 1200, income: 4.2, next: "4K TV" },
+  { name: "4K TV", cost: 2000, income: 6.5, next: "Motorcycle" },
+  { name: "Motorcycle", cost: 4500, income: 9.0, next: "Car" },
+  { name: "Car", cost: 15000, income: 25.0, next: "Used Tesla" },
+  { name: "Used Tesla", cost: 30000, income: 45.0, next: "Pizza Franchise" },
+  { name: "Pizza Franchise", cost: 60000, income: 95.0, next: "Gas Station" },
+  { name: "Gas Station", cost: 120000, income: 190.0, next: "Small Office" },
+  { name: "Small Office", cost: 250000, income: 400.0, next: "Apartment Complex" },
+  { name: "Apartment Complex", cost: 1000000, income: 1500.0, next: "Shopping Mall" },
+  { name: "Shopping Mall", cost: 4000000, income: 5500.0, next: "Skyscraper" },
+  { name: "Skyscraper", cost: 10000000, income: 15000.0, next: "SpaceX Shares" },
+  { name: "SpaceX Shares", cost: 25000000, income: 40000.0, next: "Google Shares" },
+  { name: "Google Shares", cost: 60000000, income: 100000.0, next: "Island Resort" },
+  { name: "Island Resort", cost: 150000000, income: 250000.0, next: "Mega Yacht" },
+  { name: "Mega Yacht", cost: 300000000, income: 500000.0, next: "Private Jet" },
+  { name: "Private Jet", cost: 600000000, income: 900000.0, next: "Luxury Airline" },
+  { name: "Luxury Airline", cost: 1200000000, income: 1600000.0, next: "Tech Company" },
+  { name: "Tech Company", cost: 2500000000, income: 3000000.0, next: "Bank" },
+  { name: "Bank", cost: 5000000000, income: 6000000.0, next: "Media Conglomerate" },
+  { name: "Media Conglomerate", cost: 10000000000, income: 12000000.0, next: "Private Island" },
+  { name: "Private Island", cost: 20000000000, income: 25000000.0, next: "Art Collection" },
+  { name: "Art Collection", cost: 30000000000, income: 40000000.0, next: "Luxury Casino" },
+  { name: "Luxury Casino", cost: 50000000000, income: 70000000.0, next: "Formula 1 Team" },
+  { name: "Formula 1 Team", cost: 100000000000, income: 150000000.0, next: null }
+];
+
 
     const moneyDisplay = document.getElementById('money');
     const incomeDisplay = document.getElementById('income');
