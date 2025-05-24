@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Money Clicker</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background-color: #222;
+      color: white;
+      overflow: hidden;
+    }
+    .money-fall {
+      position: fixed;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: -1;
+    }
+    .money {
+      position: absolute;
+      width: 30px;
+      height: 30px;
+      background: url('https://i.imgur.com/7O0fF3H.png') no-repeat center;
+      background-size: contain;
+      animation: fall linear infinite;
+    }
+    @keyframes fall {
+      0% { top: -30px; opacity: 1; }
+      100% { top: 100%; opacity: 0.5; }
+    }
+    .container {
+      text-align: center;
+      padding: 20px;
+    }
+    button {
+      margin: 10px;
+      padding: 10px 20px;
+      font-size: 16px;
+      border-radius: 5px;
+      border: none;
+      cursor: pointer;
+      background-color: #28a745;
+      color: white;
+    }
+    #shopItems button {
+      background-color: #007bff;
+    }
+  </style>
+</head>
+<body>
+  <div class="money-fall" id="moneyFall"></div>
+  <div class="container">
+    <h1>Money Clicker</h1>
+    <p id="money">Money: $0.00</p>
+    <p id="income">Income per click: $0.05</p>
+    <button onclick="earnMoney()">💰 Earn Money</button>
+    <button onclick="toggleShop()">🛒 Shop</button>
+    <button onclick="saveGame()">💾 Save Game</button>
+    <button onclick="resetGame()">🔄 Reset Game</button>
+    <div id="shopItems" style="display:none;"></div>
+  </div>
+  <script>
+    let data = JSON.parse(localStorage.getItem('moneyGame')) || {
+      money: 0,
+      income: 0.05,
+      purchased: [],
+      available: ["Water Bottle"],
+      cooldown: 0.5
+    };
+
+    const items = {
+      "Water Bottle": { cost: 10, increase: 0.06, next: "Backpack" },
+      "Backpack": { cost: 50, increase: 0.12, next: "Cart" },
+      "Cart": { cost: 100, increase: 0.16, next: "Bicycle" },
+      "Bicycle": { cost: 200, increase: 0.21, next: "Smartphone" },
+      "Smartphone": { cost: 750, increase: 0.35, next: "Gaming Laptop" },
+      "Gaming Laptop": { cost: 2000, increase: 0.52, next: "Plasma TV" },
+      "Plasma TV": { cost: 5000, increase: 0.75, next: "Motorcycle" },
+      "Motorcycle": { cost: 15000, increase: 1.17, next: "Car" },
+      "Car": { cost: 35000, increase: 1.64, next: "Bitcoin" }
+    };
+
+    function updateDisplay() {
+      document.getElementById("money").innerText = `Money: $${data.money.toFixed(2)}`;
+      document.getElementById("income").innerText = `Income per click: $${data.income.toFixed(2)}`;
+    }
+
+    function earnMoney() {
+      data.money += data.income;
+      updateDisplay();
+      saveGame();
+    }
+
+    function saveGame() {
+      localStorage.setItem('moneyGame', JSON.stringify(data));
+      alert("Game saved successfully!");
+    }
+
+    function resetGame() {
+      if (confirm("Are you sure you want to reset your progress?")) {
+        data = { money: 0, income: 0.05, purchased: [], available: ["Water Bottle"], cooldown: 0.5 };
+        saveGame();
+        updateDisplay();
+        renderShop();
+      }
+    }
+
+    function toggleShop() {
+      const shop = document.getElementById("shopItems");
+      shop.style.display = shop.style.display === "none" ? "block" : "none";
+      renderShop();
+    }
+
+    function renderShop() {
+      const shop = document.getElementById("shopItems");
+      shop.innerHTML = "";
+      for (let item of data.available) {
+        const info = items[item];
+        const btn = document.createElement("button");
+        btn.innerText = `${item} - $${info.cost} (+$${info.increase}/click)`;
+        btn.onclick = () => purchaseItem(item);
+        shop.appendChild(btn);
+      }
+    }
+
+    function purchaseItem(item) {
+      const info = items[item];
+      if (data.money >= info.cost) {
+        data.money -= info.cost;
+        data.income += info.increase;
+        data.purchased.push(item);
+        data.available = data.available.filter(i => i !== item);
+        if (info.next) {
+          data.available.push(info.next);
+        }
+        updateDisplay();
+        saveGame();
+        renderShop();
+      } else {
+        alert("You don't have enough money!");
+      }
+    }
+
+    function spawnMoneyFall() {
+      const container = document.getElementById("moneyFall");
+      for (let i = 0; i < 15; i++) {
+        const money = document.createElement("div");
+        money.className = "money";
+        money.style.left = Math.random() * window.innerWidth + 'px';
+        money.style.animationDuration = (3 + Math.random() * 5) + 's';
+        container.appendChild(money);
+        setTimeout(() => container.removeChild(money), 8000);
+      }
+    }
+
+    setInterval(spawnMoneyFall, 1000);
+
+    updateDisplay();
+    renderShop();
+  </script>
+</body>
+</html>
