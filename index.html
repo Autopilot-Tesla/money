@@ -4,117 +4,122 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Google Classroom</title>
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" href="favicon.png" type="image/png">
   <style>
+    * {
+      box-sizing: border-box;
+      font-family: Arial, sans-serif;
+    }
     body {
       margin: 0;
-      font-family: Arial, sans-serif;
-      background: #1e1e1e;
+      padding: 0;
+      background: #111;
       color: white;
       overflow: hidden;
     }
-    #app {
+    .background {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: -1;
+      overflow: hidden;
+    }
+    .money {
+      position: absolute;
+      color: green;
+      font-size: 20px;
+      animation: fall 5s linear infinite;
+      opacity: 0.7;
+    }
+    @keyframes fall {
+      from {
+        top: -10%;
+      }
+      to {
+        top: 110%;
+      }
+    }
+    .container {
       text-align: center;
-      padding: 20px;
+      padding-top: 60px;
     }
-    #earnMoney {
-      font-size: 2rem;
+    .money-display {
+      font-size: 20px;
+      margin: 10px;
+    }
+    .earn-btn {
+      font-size: 32px;
+      background: green;
+      color: white;
       padding: 20px 40px;
-      margin: 20px;
-      background-color: #28a745;
-      color: white;
       border: none;
-      border-radius: 8px;
+      margin-bottom: 20px;
       cursor: pointer;
+      border-radius: 0;
     }
-    #controls button {
-      display: block;
-      margin: 10px auto;
-      padding: 10px 20px;
-      font-size: 1rem;
-      border-radius: 6px;
+    .btn {
+      background: white;
+      color: black;
       border: none;
-      background-color: #007bff;
-      color: white;
+      padding: 10px 20px;
+      margin: 5px;
       cursor: pointer;
+      border-radius: 0;
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
     }
     #notification {
-      color: #aaa;
+      color: #ccc;
       margin-top: 20px;
+      font-size: 14px;
     }
-    .modal {
-      display: none;
-      position: fixed;
-      z-index: 1;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
-      overflow: auto;
-      background-color: rgba(0, 0, 0, 0.6);
-    }
-    .modal-content {
-      background-color: #2c2c2c;
-      margin: 10% auto;
+    #shop {
+      background: #222;
       padding: 20px;
-      border: 1px solid #888;
-      width: 300px;
-      border-radius: 8px;
-      color: white;
+      position: fixed;
+      top: 10%;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 2px solid white;
+      display: none;
     }
-    .close {
+    .close-shop {
+      position: absolute;
+      top: 5px;
+      right: 10px;
+      font-size: 18px;
       color: black;
-      float: right;
-      font-size: 28px;
-      font-weight: bold;
-      cursor: pointer;
       background: white;
-      padding: 0 10px;
-      border-radius: 4px;
+      border: none;
+      padding: 2px 6px;
+      cursor: pointer;
+      border-radius: 0;
     }
   </style>
 </head>
 <body>
-  <div id="app">
+  <div class="background" id="background"></div>
+
+  <div class="container">
     <h1>Google Classroom</h1>
-    <div id="stats">
-      <p id="money">Money: $0.00</p>
-      <p id="income">Income per click: $0.05</p>
-    </div>
+    <div class="money-display" id="money">Money: $0.00</div>
+    <div class="money-display" id="income">Income per click: $0.05</div>
+    <button class="earn-btn" onclick="earnMoney()">$</button>
+    <button class="btn" onclick="openShop()">Shop</button>
+    <button class="btn" onclick="saveGame()">Save Game</button>
+    <button class="btn" onclick="resetGame()">Reset Game</button>
+    <div id="notification"></div>
+  </div>
 
-    <button id="earnMoney">$</button>
-
-    <div id="controls">
-      <button onclick="openShop()">Shop</button>
-      <button onclick="saveGame()">Save Game</button>
-      <button onclick="resetGame()">Reset Game</button>
-    </div>
-
-    <p id="notification"></p>
-
-    <div id="shopModal" class="modal">
-      <div class="modal-content">
-        <span class="close" onclick="closeShop()">&#10006;</span>
-        <h2>Shop</h2>
-        <div id="shopItems"></div>
-      </div>
-    </div>
+  <div id="shop">
+    <button class="close-shop" onclick="closeShop()">X</button>
+    <div id="shop-items"></div>
   </div>
 
   <script>
-    const moneyEl = document.getElementById('money');
-    const incomeEl = document.getElementById('income');
-    const notification = document.getElementById('notification');
-    const shopModal = document.getElementById('shopModal');
-    const shopItems = document.getElementById('shopItems');
-
-    let gameData = JSON.parse(localStorage.getItem("moneyGameData")) || {
-      money: 0,
-      income: 0.05,
-      purchased: [],
-      available: ["Water Bottle"]
-    };
-
     const items = {
       "Water Bottle": { cost: 10, increase: 0.06, next: "Backpack" },
       "Backpack": { cost: 50, increase: 0.12, next: "Cart" },
@@ -127,70 +132,79 @@
       "Car": { cost: 35000, increase: 1.64, next: "Bitcoin" }
     };
 
+    let data = JSON.parse(localStorage.getItem("moneyGame")) || {
+      money: 0,
+      income: 0.05,
+      purchased: [],
+      available: ["Water Bottle"]
+    };
+
     function updateDisplay() {
-      moneyEl.textContent = `Money: $${gameData.money.toFixed(2)}`;
-      incomeEl.textContent = `Income per click: $${gameData.income.toFixed(2)}`;
+      document.getElementById("money").textContent = `Money: $${data.money.toFixed(2)}`;
+      document.getElementById("income").textContent = `Income per click: $${data.income.toFixed(2)}`;
     }
 
-    function saveGame(showNotification = true) {
-      localStorage.setItem("moneyGameData", JSON.stringify(gameData));
-      if (showNotification) {
-        notification.textContent = "Game saved successfully!";
-        setTimeout(() => notification.textContent = "", 2000);
+    function earnMoney() {
+      data.money += data.income;
+      updateDisplay();
+      saveGame();
+    }
+
+    function openShop() {
+      const shop = document.getElementById("shop-items");
+      shop.innerHTML = "";
+      data.available.forEach(item => {
+        const btn = document.createElement("button");
+        btn.className = "btn";
+        btn.textContent = `${item} - $${items[item].cost} (+$${items[item].increase}/click)`;
+        btn.onclick = () => purchaseItem(item);
+        shop.appendChild(btn);
+      });
+      document.getElementById("shop").style.display = "block";
+    }
+
+    function closeShop() {
+      document.getElementById("shop").style.display = "none";
+    }
+
+    function purchaseItem(item) {
+      if (data.money >= items[item].cost) {
+        data.money -= items[item].cost;
+        data.income += items[item].increase;
+        data.purchased.push(item);
+        data.available = data.available.filter(i => i !== item);
+        if (items[item].next) data.available.push(items[item].next);
+        updateDisplay();
+        saveGame();
+        openShop();
       }
+    }
+
+    function saveGame() {
+      localStorage.setItem("moneyGame", JSON.stringify(data));
+      document.getElementById("notification").textContent = "Game saved successfully!";
     }
 
     function resetGame() {
       if (confirm("Are you sure you want to reset your progress?")) {
-        gameData = { money: 0, income: 0.05, purchased: [], available: ["Water Bottle"] };
-        saveGame(false);
+        data = { money: 0, income: 0.05, purchased: [], available: ["Water Bottle"] };
         updateDisplay();
+        saveGame();
+        document.getElementById("shop").style.display = "none";
       }
     }
 
-    function earnMoney() {
-      gameData.money += gameData.income;
-      updateDisplay();
+    function spawnMoneyText() {
+      const el = document.createElement("div");
+      el.className = "money";
+      el.textContent = "$";
+      el.style.left = Math.random() * 100 + "%";
+      el.style.animationDuration = (2 + Math.random() * 3) + "s";
+      document.getElementById("background").appendChild(el);
+      setTimeout(() => el.remove(), 5000);
     }
 
-    function openShop() {
-      shopItems.innerHTML = "";
-      gameData.available.forEach(item => {
-        const data = items[item];
-        const btn = document.createElement("button");
-        btn.textContent = `${item} - $${data.cost} (+$${data.increase}/click)`;
-        btn.onclick = () => purchaseItem(item);
-        shopItems.appendChild(btn);
-      });
-      shopModal.style.display = "block";
-    }
-
-    function closeShop() {
-      shopModal.style.display = "none";
-    }
-
-    function purchaseItem(item) {
-      const data = items[item];
-      if (gameData.money >= data.cost) {
-        gameData.money -= data.cost;
-        gameData.income += data.increase;
-        gameData.purchased.push(item);
-        const index = gameData.available.indexOf(item);
-        if (index > -1) gameData.available.splice(index, 1);
-        if (data.next) gameData.available.push(data.next);
-        saveGame(false);
-        updateDisplay();
-        openShop();
-      } else {
-        notification.textContent = "Not enough money!";
-        setTimeout(() => notification.textContent = "", 2000);
-      }
-    }
-
-    document.getElementById("earnMoney").addEventListener("click", () => {
-      earnMoney();
-      saveGame(false);
-    });
+    setInterval(spawnMoneyText, 100);
 
     updateDisplay();
   </script>
