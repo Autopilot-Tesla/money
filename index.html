@@ -1,177 +1,198 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Money Clicker</title>
   <style>
     body {
       margin: 0;
       font-family: Arial, sans-serif;
-      background: #1e1e1e;
+      background: #222;
       color: white;
       overflow: hidden;
+    }
+    .falling-money {
+      position: absolute;
+      top: -2em;
+      font-size: 16px;
+      color: green;
+      animation: fall 5s linear infinite;
+    }
+    @keyframes fall {
+      0% { top: -2em; }
+      100% { top: 100vh; }
     }
     .container {
       text-align: center;
       margin-top: 50px;
-      z-index: 10;
-      position: relative;
+    }
+    h1 {
+      font-size: 36px;
+    }
+    .money, .income {
+      font-size: 20px;
+      margin: 10px 0;
+    }
+    #earnMoney {
+      font-size: 36px;
+      padding: 30px;
+      margin: 20px auto;
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      border: none;
+      background-color: green;
+      color: white;
+      cursor: pointer;
+    }
+    .button-row {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
     }
     button {
       padding: 10px 20px;
       font-size: 16px;
-      margin: 5px;
       border: none;
       border-radius: 5px;
       cursor: pointer;
-      color: white;
     }
-    .earn-btn { background-color: #28a745; }
-    .shop-btn { background-color: #218838; }
-    .save-btn { background-color: #17a2b8; }
-    .reset-btn { background-color: #007bff; }
-    .shop-item {
-      display: inline-block;
-      background-color: #007bff;
-      padding: 10px;
-      border-radius: 5px;
-      margin-top: 10px;
-    }
+    .save-btn { background-color: #28a745; color: white; }
+    .shop-btn { background-color: #17a2b8; color: white; }
+    .reset-btn { background-color: #dc3545; color: white; }
     .notification {
-      position: fixed;
-      bottom: 10px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #444;
-      color: #fff;
-      padding: 10px 20px;
-      border-radius: 5px;
+      margin-top: 20px;
+      padding: 10px;
+      background-color: #444;
+      color: white;
       display: none;
-      z-index: 1;
     }
-    .money-fall {
+    .shop-modal {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: #333;
+      padding: 20px;
+      border-radius: 10px;
+      display: none;
+      z-index: 10;
+    }
+    .shop-modal button.close {
+      background: none;
+      color: white;
+      font-size: 20px;
       position: absolute;
-      top: -30px;
-      color: #aaa;
-      font-size: 12px;
-      white-space: nowrap;
-      animation: fall 10s linear infinite;
-    }
-    @keyframes fall {
-      0% { transform: translateY(-50px); opacity: 0; }
-      10% { opacity: 1; }
-      100% { transform: translateY(100vh); opacity: 0; }
+      right: 10px;
+      top: 10px;
+      cursor: pointer;
     }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>Money Clicker</h1>
-    <p id="money">Money: $0.00</p>
-    <p id="income">Income per click: $0.05</p>
-    <button class="earn-btn" onclick="earnMoney()">💰 Earn Money</button>
-    <button class="shop-btn" onclick="openShop()">🛒 Shop</button>
-    <button class="save-btn" onclick="saveGame(false)">💾 Save Game</button>
-    <button class="reset-btn" onclick="resetGame()">🔄 Reset Game</button>
-    <div id="shop"></div>
+    <div class="money" id="money">Money: $0.00</div>
+    <div class="income" id="income">Income per click: $0.05</div>
+    <button id="earnMoney">$</button>
+    <div class="button-row">
+      <button class="shop-btn" onclick="openShop()">🛒 Shop</button>
+      <button class="save-btn" onclick="saveGame()">💾 Save Game</button>
+      <button class="reset-btn" onclick="resetGame()">🔄 Reset Game</button>
+    </div>
+    <div class="notification" id="notification"></div>
   </div>
 
-  <div class="notification" id="notification"></div>
+  <div class="shop-modal" id="shopModal">
+    <button class="close" onclick="closeShop()">✖</button>
+    <div id="shopItems"></div>
+  </div>
 
   <script>
+    let data = {
+      money: 0,
+      income: 0.05,
+      available: ["Water Bottle"],
+    };
+
     const items = {
       "Water Bottle": { cost: 10, increase: 0.06, next: "Backpack" },
       "Backpack": { cost: 50, increase: 0.12, next: "Cart" },
       "Cart": { cost: 100, increase: 0.16, next: "Bicycle" },
-      "Bicycle": { cost: 200, increase: 0.21, next: "Smartphone" },
-      "Smartphone": { cost: 750, increase: 0.35, next: "Gaming Laptop" },
-      "Gaming Laptop": { cost: 2000, increase: 0.52, next: "Plasma TV" },
-      "Plasma TV": { cost: 5000, increase: 0.75, next: "Motorcycle" },
-      "Motorcycle": { cost: 15000, increase: 1.17, next: "Car" },
-      "Car": { cost: 35000, increase: 1.64, next: "Bitcoin" },
-    };
-
-    let gameData = JSON.parse(localStorage.getItem("moneyGame")) || {
-      money: 0,
-      income: 0.05,
-      purchased: [],
-      available: ["Water Bottle"]
     };
 
     function updateDisplay() {
-      document.getElementById("money").innerText = `Money: $${gameData.money.toFixed(2)}`;
-      document.getElementById("income").innerText = `Income per click: $${gameData.income.toFixed(2)}`;
+      document.getElementById("money").textContent = `Money: $${data.money.toFixed(2)}`;
+      document.getElementById("income").textContent = `Income per click: $${data.income.toFixed(2)}`;
     }
 
-    function earnMoney() {
-      gameData.money += gameData.income;
+    document.getElementById("earnMoney").onclick = () => {
+      data.money += data.income;
       updateDisplay();
+    };
+
+    function showNotification(message) {
+      const note = document.getElementById("notification");
+      note.textContent = message;
+      note.style.display = "block";
+      setTimeout(() => note.style.display = "none", 3000);
     }
 
-    function openShop() {
-      const shopDiv = document.getElementById("shop");
-      shopDiv.innerHTML = "";
-      gameData.available.forEach(item => {
-        const data = items[item];
-        const btn = document.createElement("button");
-        btn.className = "shop-item";
-        btn.innerText = `${item} - $${data.cost} (+$${data.increase}/click)`;
-        btn.onclick = () => purchaseItem(item);
-        shopDiv.appendChild(btn);
-      });
-    }
-
-    function purchaseItem(item) {
-      const data = items[item];
-      if (gameData.money >= data.cost) {
-        gameData.money -= data.cost;
-        gameData.income += data.increase;
-        gameData.purchased.push(item);
-        gameData.available = gameData.available.filter(i => i !== item);
-        if (data.next) gameData.available.push(data.next);
-        updateDisplay();
-        openShop();
-      } else {
-        showNotification("You don't have enough money!");
-      }
-    }
-
-    function saveGame(showAlert = true) {
-      localStorage.setItem("moneyGame", JSON.stringify(gameData));
-      if (showAlert) showNotification("Game saved successfully!");
+    function saveGame() {
+      localStorage.setItem("moneyClicker", JSON.stringify(data));
+      showNotification("Game saved successfully!");
     }
 
     function resetGame() {
-      if (confirm("Are you sure you want to reset your progress?")) {
-        gameData = {
-          money: 0,
-          income: 0.05,
-          purchased: [],
-          available: ["Water Bottle"]
-        };
-        saveGame(false);
+      if (confirm("Reset game?")) {
+        data = { money: 0, income: 0.05, available: ["Water Bottle"] };
         updateDisplay();
-        openShop();
       }
     }
 
-    function showNotification(text) {
-      const note = document.getElementById("notification");
-      note.innerText = text;
-      note.style.display = "block";
-      setTimeout(() => { note.style.display = "none"; }, 2000);
+    function openShop() {
+      const shop = document.getElementById("shopModal");
+      const container = document.getElementById("shopItems");
+      container.innerHTML = "";
+      data.available.forEach(item => {
+        const el = document.createElement("button");
+        el.textContent = `${item} - $${items[item].cost} (+$${items[item].increase}/click)`;
+        el.onclick = () => purchaseItem(item);
+        container.appendChild(el);
+      });
+      shop.style.display = "block";
     }
 
-    function spawnMoneyText() {
-      const span = document.createElement("span");
-      span.className = "money-fall";
-      span.innerText = "$";
-      span.style.left = Math.random() * 100 + "%";
-      document.body.appendChild(span);
-      setTimeout(() => span.remove(), 10000);
+    function closeShop() {
+      document.getElementById("shopModal").style.display = "none";
     }
-    setInterval(spawnMoneyText, 150);
+
+    function purchaseItem(item) {
+      const info = items[item];
+      if (data.money >= info.cost) {
+        data.money -= info.cost;
+        data.income += info.increase;
+        const index = data.available.indexOf(item);
+        if (index > -1) data.available.splice(index, 1);
+        if (info.next) data.available.push(info.next);
+        updateDisplay();
+        closeShop();
+      } else {
+        showNotification("Not enough money!");
+      }
+    }
+
+    // Money falling animation
+    setInterval(() => {
+      const moneyEl = document.createElement("div");
+      moneyEl.classList.add("falling-money");
+      moneyEl.style.left = Math.random() * window.innerWidth + "px";
+      moneyEl.textContent = "$";
+      document.body.appendChild(moneyEl);
+      setTimeout(() => document.body.removeChild(moneyEl), 6000);
+    }, 200);
 
     updateDisplay();
   </script>
