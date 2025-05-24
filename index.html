@@ -7,199 +7,240 @@
   <link rel="icon" href="google-classroom-favicon.png" />
   <style>
     body {
-      margin: 0;
-      font-family: sans-serif;
-      background: black;
-      color: white;
+      font-family: Arial, sans-serif;
+      background-color: #000;
+      color: #fff;
       text-align: center;
       overflow-x: hidden;
+      margin: 0;
+      padding: 0;
     }
     h1 {
-      margin-top: 20px;
+      margin: 0.5em 0 0.2em;
     }
-    #moneyBtn {
-      font-size: 3rem;
-      padding: 30px 60px;
-      background: green;
-      color: white;
-      border: none;
-      border-radius: 10px;
-      margin-bottom: 20px;
-      cursor: pointer;
+    h2 {
+      margin-bottom: 1em;
     }
-    .btn {
-      font-size: 1rem;
-      padding: 10px 20px;
-      margin: 5px;
-      border-radius: 8px;
-      border: none;
-      cursor: pointer;
-      background: white;
-      color: black;
-      transition: transform 0.2s;
+    #money-display, #income-display {
+      font-size: 1.2em;
     }
-    .btn.spin {
-      animation: spin 0.4s linear;
-    }
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-    #shop, #gadgets {
+    .button {
       margin: 10px;
+      padding: 15px 30px;
+      font-size: 1em;
+      border: none;
+      cursor: pointer;
+      border-radius: 6px;
+      transition: transform 0.1s;
+    }
+    #click-button {
+      background-color: green;
+      color: white;
+      font-size: 2em;
+      padding: 30px;
+      border-radius: 6px;
+      transform-origin: center;
+    }
+    #click-button:active {
+      transform: scale(1.1) rotate(10deg);
+    }
+    .control-button {
+      background-color: white;
+      color: black;
+    }
+    .shop-item, .gadget-item {
+      background-color: #eee;
+      color: black;
       padding: 10px;
+      margin: 10px auto;
+      width: 80%;
+      border-radius: 8px;
+      font-size: 1em;
+    }
+    #shop-container, #gadget-container {
+      display: none;
+      position: fixed;
+      top: 15%;
+      left: 50%;
+      transform: translateX(-50%);
       background: white;
       color: black;
+      padding: 20px;
       border-radius: 10px;
-      display: none;
+      z-index: 10;
+      max-height: 70%;
+      overflow-y: auto;
     }
-    .shop-button {
-      margin: 5px;
-      background: #f0f0f0;
-      padding: 8px;
-      border-radius: 6px;
-    }
-    #moneyRain {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-      z-index: -1;
-    }
-    .money-fall {
+    .close-button {
+      background: none;
+      border: none;
+      color: black;
+      font-size: 1.5em;
       position: absolute;
-      font-size: 20px;
-      color: green;
-      animation: fall 3s linear infinite;
+      top: 10px;
+      right: 20px;
+      cursor: pointer;
     }
-    @keyframes fall {
-      from { top: -20px; }
-      to { top: 100%; }
+    .notification {
+      background-color: #555;
+      color: white;
+      padding: 10px;
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      border-radius: 6px;
+      display: none;
+      z-index: 20;
+    }
+    .dollar {
+      position: absolute;
+      color: lime;
+      font-size: 24px;
+      pointer-events: none;
+      user-select: none;
     }
   </style>
 </head>
 <body>
-  <h1>Google Classroom</h1>
-  <h2 id="moneyDisplay">Money: $0.00</h2>
-  <button id="moneyBtn">$</button>
-  <div>
-    <button class="btn" onclick="toggleShop()">Shop</button>
-    <button class="btn" onclick="toggleGadgets()">Gadgets</button>
-    <button class="btn" onclick="resetGame()">Reset</button>
+  <h1>Money Maker</h1>
+  <div id="money-display">Money: $0.00</div>
+  <div id="income-display">Income per click: $0.01</div>
+  <br />
+  <button id="click-button" class="button">$</button>
+  <br />
+  <button class="button control-button" onclick="toggleShop()">Shop</button>
+  <button class="button control-button" onclick="toggleGadgets()">Gadgets</button>
+  <button class="button control-button" onclick="saveGame()">Save</button>
+  <button class="button control-button" onclick="confirmReset()">Reset</button>
+
+  <div id="shop-container">
+    <button class="close-button" onclick="toggleShop()">✖</button>
+    <div id="shop-items"></div>
   </div>
-  <div id="shop">
-    <button class="btn" onclick="toggleShop()">X</button>
-    <div id="shopItems"></div>
+
+  <div id="gadget-container">
+    <button class="close-button" onclick="toggleGadgets()">✖</button>
+    <div id="gadget-items"></div>
   </div>
-  <div id="gadgets">
-    <button class="btn" onclick="toggleGadgets()">X</button>
-    <div id="gadgetItems"></div>
-  </div>
-  <div id="moneyRain"></div>
+
+  <div id="notification" class="notification"></div>
 
   <script>
-    const moneyBtn = document.getElementById('moneyBtn');
-    const moneyDisplay = document.getElementById('moneyDisplay');
-    const shopItems = document.getElementById('shopItems');
-    const gadgetItems = document.getElementById('gadgetItems');
-    let money = parseFloat(localStorage.getItem("money") || 0);
-    let incomePerClick = parseFloat(localStorage.getItem("income") || 0.01);
-
-    const items = [
-      { name: 'Water Bottle', cost: 2, income: 0.01 },
-      { name: 'Sandwich', cost: 5, income: 0.02 },
-      { name: 'Book', cost: 15, income: 0.03 },
-      { name: 'Backpack', cost: 40, income: 0.05 },
-      { name: 'Smartphone', cost: 300, income: 0.5 },
-      { name: 'Gaming Console', cost: 500, income: 1 },
-      { name: 'Laptop', cost: 1200, income: 2 },
-      { name: '4K TV', cost: 2000, income: 3 },
-      { name: 'Motorcycle', cost: 4500, income: 5 },
-      { name: 'Car', cost: 15000, income: 10 },
-      { name: 'Tesla', cost: 30000, income: 20 },
-      { name: 'Pizza Franchise', cost: 60000, income: 50 },
-      { name: 'Gas Station', cost: 120000, income: 100 },
-      { name: 'Skyscraper', cost: 10000000, income: 2000 },
+    let money = parseFloat(localStorage.getItem("money")) || 0;
+    let income = parseFloat(localStorage.getItem("income")) || 0.01;
+    const shopItems = [
+      { name: "Water Bottle", cost: 2, income: 0.01 },
+      { name: "Sandwich", cost: 5, income: 0.02 },
+      { name: "Book", cost: 15, income: 0.04 },
+      { name: "Backpack", cost: 40, income: 0.05 },
+      { name: "Smartphone", cost: 300, income: 0.10 },
+      { name: "Gaming Console", cost: 500, income: 0.25 },
+      { name: "Electric Scooter", cost: 800, income: 0.3 },
+      { name: "Laptop", cost: 1200, income: 0.5 },
+      { name: "Car", cost: 15000, income: 1 },
+      { name: "Pizza Franchise", cost: 60000, income: 3 },
     ];
 
+    let currentShopIndex = 0;
+
     function updateDisplay() {
-      moneyDisplay.textContent = `Money: $${money.toFixed(2)}`;
-      localStorage.setItem("money", money);
-      localStorage.setItem("income", incomePerClick);
+      document.getElementById("money-display").textContent = `Money: $${money.toFixed(2)}`;
+      document.getElementById("income-display").textContent = `Income per click: $${income.toFixed(2)}`;
     }
 
-    function addMoney() {
-      money += incomePerClick;
+    function spawnDollar() {
+      const dollar = document.createElement("div");
+      dollar.className = "dollar";
+      dollar.style.left = Math.random() * window.innerWidth + "px";
+      dollar.style.top = "0px";
+      dollar.textContent = "$";
+      document.body.appendChild(dollar);
+      let fall = setInterval(() => {
+        let top = parseFloat(dollar.style.top);
+        if (top > window.innerHeight) {
+          clearInterval(fall);
+          dollar.remove();
+        } else {
+          dollar.style.top = top + 5 + "px";
+        }
+      }, 20);
+    }
+
+    function showNotification(msg) {
+      const notif = document.getElementById("notification");
+      notif.textContent = msg;
+      notif.style.display = "block";
+      setTimeout(() => notif.style.display = "none", 2000);
+    }
+
+    function clickMoney() {
+      money += income;
       updateDisplay();
-      dropDollar();
+      spawnDollar();
     }
 
     function toggleShop() {
-      const shop = document.getElementById("shop");
-      shop.style.display = shop.style.display === "block" ? "none" : "block";
+      const container = document.getElementById("shop-container");
+      container.style.display = container.style.display === "block" ? "none" : "block";
+      renderShop();
     }
 
     function toggleGadgets() {
-      const gadgets = document.getElementById("gadgets");
-      gadgets.style.display = gadgets.style.display === "block" ? "none" : "block";
+      const container = document.getElementById("gadget-container");
+      container.style.display = container.style.display === "block" ? "none" : "block";
     }
 
-    function resetGame() {
-      money = 0;
-      incomePerClick = 0.01;
-      updateDisplay();
-    }
-
-    function buyItem(item) {
-      if (money >= item.cost) {
-        money -= item.cost;
-        incomePerClick += item.income;
-        updateDisplay();
-      } else {
-        alert("Not enough money!");
+    function renderShop() {
+      const container = document.getElementById("shop-items");
+      container.innerHTML = "";
+      if (currentShopIndex < shopItems.length) {
+        const item = shopItems[currentShopIndex];
+        const btn = document.createElement("button");
+        btn.className = "shop-item";
+        btn.textContent = `${item.name} - $${item.cost} (+$${item.income}/click)`;
+        btn.onclick = () => {
+          if (money >= item.cost) {
+            money -= item.cost;
+            income += item.income;
+            currentShopIndex++;
+            updateDisplay();
+            renderShop();
+          } else {
+            showNotification("You don't have enough money!");
+          }
+        };
+        container.appendChild(btn);
       }
     }
 
-    function buildShop() {
-      shopItems.innerHTML = "";
-      items.forEach((item) => {
-        const btn = document.createElement("button");
-        btn.className = "btn shop-button";
-        btn.textContent = `${item.name} - $${item.cost} (+$${item.income.toFixed(2)}/click)`;
-        btn.onclick = () => buyItem(item);
-        shopItems.appendChild(btn);
-      });
+    function saveGame() {
+      localStorage.setItem("money", money);
+      localStorage.setItem("income", income);
+      showNotification("Game saved!");
     }
 
-    function dropDollar() {
-      const dollar = document.createElement("div");
-      dollar.className = "money-fall";
-      dollar.style.left = Math.random() * 100 + "%";
-      dollar.textContent = "$";
-      document.getElementById("moneyRain").appendChild(dollar);
-      setTimeout(() => dollar.remove(), 3000);
+    function confirmReset() {
+      if (confirm("Are you sure you want to reset the game?")) {
+        money = 0;
+        income = 0.01;
+        currentShopIndex = 0;
+        updateDisplay();
+        renderShop();
+        localStorage.clear();
+        showNotification("Game reset!");
+      }
     }
 
-    let holdInterval;
-    moneyBtn.addEventListener("mousedown", () => {
-      addMoney();
-      holdInterval = setInterval(addMoney, 100);
-      moneyBtn.classList.add("spin");
+    document.getElementById("click-button").addEventListener("mousedown", () => {
+      clickInterval = setInterval(clickMoney, 100);
     });
-    moneyBtn.addEventListener("mouseup", () => {
-      clearInterval(holdInterval);
-      moneyBtn.classList.remove("spin");
-    });
-    moneyBtn.addEventListener("mouseleave", () => {
-      clearInterval(holdInterval);
-      moneyBtn.classList.remove("spin");
+    document.addEventListener("mouseup", () => {
+      clearInterval(clickInterval);
     });
 
-    // Init
     updateDisplay();
-    buildShop();
+    renderShop();
   </script>
 </body>
 </html>
