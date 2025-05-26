@@ -1,199 +1,178 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="icon" href="google-classroom-favicon.png">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Google Classroom</title>
+  <link rel="icon" href="google-classroom-favicon.png" type="image/png" />
   <style>
     body {
-      font-family: 'Segoe UI', sans-serif;
-      background-color: #121212;
-      color: white;
-      text-align: center;
       margin: 0;
+      padding: 0;
+      background: #282c34;
+      color: white;
+      font-family: Arial, sans-serif;
       overflow: hidden;
     }
-    #title {
-      font-size: 2rem;
-      margin-top: 1rem;
-      font-weight: bold;
+
+    #container {
+      text-align: center;
+      padding-top: 80px;
     }
-    #moneyDisplay {
-      font-size: 1.5rem;
-      margin-top: 0.5rem;
-    }
-    #moneyButton {
-      font-size: 3rem;
-      width: 200px;
-      height: 100px;
-      background-color: #00c853;
+
+    #per-click-display {
+      font-size: 24px;
+      margin-bottom: 20px;
       color: white;
-      border: none;
-      border-radius: 15px;
-      cursor: pointer;
-      margin-top: 2rem;
     }
-    .btn {
-      padding: 10px 20px;
-      margin: 5px;
-      border-radius: 10px;
-      background-color: white;
-      color: black;
-      border: none;
-      cursor: pointer;
+
+    #money-display {
+      font-size: 32px;
+      margin: 10px;
     }
-    #shopMenu {
-      position: absolute;
-      top: 10%;
-      left: 50%;
-      transform: translateX(-50%);
+
+    #money-button {
+      padding: 20px 40px;
+      font-size: 48px;
+      border-radius: 12px;
+      background: gold;
+      border: 4px solid black;
+      cursor: pointer;
+      margin-bottom: 60px;
+    }
+
+    .button-row button {
       background: white;
       color: black;
-      border-radius: 15px;
-      padding: 20px;
-      width: 300px;
-      display: none;
-    }
-    .closeBtn {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      background-color: black;
-      color: white;
-      font-size: 18px;
+      padding: 10px;
+      margin: 10px;
+      border-radius: 8px;
       border: none;
-      border-radius: 5px;
+      font-size: 16px;
       cursor: pointer;
     }
-    .section-title {
+
+    .particle {
+      position: absolute;
+      font-size: 18px;
+      color: green;
       font-weight: bold;
-      margin-top: 20px;
-    }
-    .applyBtn {
-      background: #2196F3;
-      color: white;
-      border-radius: 5px;
-      margin-top: 5px;
+      pointer-events: none;
+      z-index: 9999;
     }
   </style>
 </head>
 <body>
-  <div id="title">Money Maker</div>
-  <div id="moneyDisplay">Money: $0.00</div>
-  <button id="moneyButton">$</button>
-  <br>
-  <button class="btn" onclick="openShop()">Shop</button>
-  <button class="btn" onclick="openSettings()">Settings</button>
-  <button class="btn" onclick="confirmReset()">Reset</button>
-
-  <div id="shopMenu">
-    <button class="closeBtn" onclick="closeShop()">X</button>
-    <div id="itemSection">
-      <div class="section-title">Item</div>
-      <button class="btn" id="itemButton"></button>
-    </div>
-    <div id="buttonSection">
-      <div class="section-title">Buttons</div>
-      <button class="btn" id="buttonOption"></button>
+  <div id="container">
+    <h1>Money Maker</h1>
+    <div id="per-click-display">+ $0.01 / click</div>
+    <div id="money-display">Money: $0.00</div>
+    <button id="money-button">$</button>
+    <div class="button-row">
+      <button onclick="openShop()">Shop</button>
+      <button onclick="openSettings()">Settings</button>
+      <button onclick="resetGame()">Reset</button>
     </div>
   </div>
 
+  <!-- Shop Modal -->
+  <div id="shop-modal" style="display:none; position:fixed; top:10%; left:50%; transform:translateX(-50%); background:#333; padding:20px; border:2px solid white; z-index:1000; width:300px;">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <h3>Shop</h3>
+      <button onclick="closeShop()" style="background:black; color:white; border:none; font-size:20px; cursor:pointer;">✕</button>
+    </div>
+    <div id="item-shop"></div>
+    <hr />
+    <h4>Buttons</h4>
+    <div id="button-shop"></div>
+  </div>
+
   <script>
-    let money = parseFloat(localStorage.getItem("money")) || 0;
-    let earnRate = 0.01;
-    let clickHoldInterval;
-    let currentItemIndex = 0;
-    let currentButtonIndex = 0;
-    const items = [
-      { name: "Water Bottle", cost: 2, rate: 0.01 },
-      { name: "Book", cost: 15, rate: 0.03 },
-      { name: "Phone", cost: 300, rate: 0.10 },
-      { name: "Laptop", cost: 1200, rate: 0.25 },
-      { name: "Car", cost: 15000, rate: 1 },
-      { name: "Small Office", cost: 250000, rate: 5 },
-      { name: "Apartment Complex", cost: 1000000, rate: 10 }
-    ];
-    const buttons = [
-      { name: "Square Button", shape: "square" },
-      { name: "Spinning Button", shape: "spin" },
-      { name: "Moving Button", shape: "move" }
-    ];
+    let money = parseFloat(localStorage.getItem('money')) || 0;
+    let income = parseFloat(localStorage.getItem('income')) || 0.01;
+    const moneyDisplay = document.getElementById('money-display');
+    const perClickDisplay = document.getElementById('per-click-display');
 
     function updateMoneyDisplay() {
-      document.getElementById("moneyDisplay").textContent = `Money: $${money.toFixed(2)}`;
-      localStorage.setItem("money", money);
+      moneyDisplay.textContent = `Money: $${money.toFixed(2)}`;
+      perClickDisplay.textContent = `+ $${income.toFixed(2)} / click`;
     }
 
-    function earnMoney() {
-      money += earnRate;
+    function addMoney() {
+      money += income;
+      localStorage.setItem('money', money);
       updateMoneyDisplay();
     }
 
-    const moneyButton = document.getElementById("moneyButton");
-    moneyButton.addEventListener("mousedown", () => {
-      earnMoney();
-      clickHoldInterval = setInterval(earnMoney, 100);
+    // Button interactions
+    const moneyBtn = document.getElementById('money-button');
+    let holdInterval;
+    moneyBtn.addEventListener('mousedown', () => {
+      addMoney();
+      holdInterval = setInterval(addMoney, 200);
     });
-    moneyButton.addEventListener("mouseup", () => clearInterval(clickHoldInterval));
-    moneyButton.addEventListener("mouseleave", () => clearInterval(clickHoldInterval));
-    moneyButton.addEventListener("click", earnMoney);
+    moneyBtn.addEventListener('mouseup', () => clearInterval(holdInterval));
+    moneyBtn.addEventListener('mouseleave', () => clearInterval(holdInterval));
+    moneyBtn.addEventListener('click', addMoney);
+
+    function resetGame() {
+      if (confirm("Are you sure you want to reset your progress?")) {
+        money = 0;
+        income = 0.01;
+        localStorage.setItem('money', money);
+        localStorage.setItem('income', income);
+        updateMoneyDisplay();
+      }
+    }
 
     function openShop() {
-      document.getElementById("shopMenu").style.display = "block";
-      updateShop();
+      document.getElementById('shop-modal').style.display = 'block';
+      document.getElementById('item-shop').innerHTML = '<button onclick="buyItem(0.05, 10)">$10 - Water Bottle (+$0.05)</button>';
+      document.getElementById('button-shop').innerHTML = '<button onclick="buyItem(0.00, 100, true)">$100 - Fancy Button</button>';
     }
 
     function closeShop() {
-      document.getElementById("shopMenu").style.display = "none";
+      document.getElementById('shop-modal').style.display = 'none';
     }
 
-    function updateShop() {
-      const item = items[currentItemIndex];
-      const itemBtn = document.getElementById("itemButton");
-      if (item) {
-        itemBtn.textContent = `${item.name} - $${item.cost} (+$${item.rate}/click)`;
-        itemBtn.onclick = () => {
-          if (money >= item.cost) {
-            money -= item.cost;
-            earnRate += item.rate;
-            currentItemIndex++;
-            updateShop();
-            updateMoneyDisplay();
-            alert("Purchased!");
-          } else {
-            alert("You don’t have enough money");
-          }
-        };
+    function buyItem(increase, cost, isButton = false) {
+      if (money >= cost) {
+        money -= cost;
+        if (!isButton) income += increase;
+        updateMoneyDisplay();
+        localStorage.setItem('money', money);
+        localStorage.setItem('income', income);
+        closeShop();
       } else {
-        itemBtn.textContent = "No more items.";
-        itemBtn.disabled = true;
+        alert("You don't have enough money!");
       }
-
-      const btn = buttons[currentButtonIndex];
-      const btnOption = document.getElementById("buttonOption");
-      btnOption.textContent = `${btn.name}`;
-      btnOption.onclick = () => {
-        currentButtonIndex++;
-        alert(`You unlocked: ${btn.name}`);
-      };
     }
 
     function openSettings() {
-      alert("Coming soon: apply buttons/items in a nice settings menu!");
+      alert("Settings menu coming soon!");
     }
 
-    function confirmReset() {
-      if (confirm("Are you sure you want to reset your game?")) {
-        money = 0;
-        earnRate = 0.01;
-        currentItemIndex = 0;
-        currentButtonIndex = 0;
-        updateMoneyDisplay();
-        alert("Game has been reset.");
-      }
-    }
+    // Falling $ particles
+    const createParticle = () => {
+      const p = document.createElement('div');
+      p.className = 'particle';
+      p.textContent = '$';
+      p.style.left = Math.random() * window.innerWidth + 'px';
+      p.style.top = '0px';
+      document.body.appendChild(p);
 
+      let y = 0;
+      const fall = setInterval(() => {
+        y += 2 + Math.random() * 2;
+        p.style.top = y + 'px';
+        if (y > window.innerHeight) {
+          clearInterval(fall);
+          p.remove();
+        }
+      }, 16);
+    };
+
+    setInterval(createParticle, 300);
     updateMoneyDisplay();
   </script>
 </body>
